@@ -12,6 +12,7 @@ class MyFirebaseMessagingService: FirebaseMessagingService() {
         // Обрабатываем полученное сообщение
         Log.d(TAG, "From: " + remoteMessage.from)
         Log.d(TAG, "Notification Message Body: " + remoteMessage.notification!!.body)
+        super.onMessageReceived(remoteMessage)
     }
 
     override fun onNewToken(token: String) {
