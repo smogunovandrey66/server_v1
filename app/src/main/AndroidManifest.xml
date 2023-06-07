@@ -21,7 +21,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Server_v1"
-            android:screenOrientation="portrait">>
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -50,19 +50,19 @@
             </intent-filter>
         </service>
         <!-- Добавляем получатель Firebase Cloud Messaging -->
-        <receiver
-            android:name="com.template.MyFirebaseMessagingReceiver"
-            android:exported="true"
-            android:permission="com.google.android.c2dm.permission.SEND"
-            tools:ignore="Instantiatable">
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-
-                <!-- Здесь вы должны использовать ваш пакет -->
-                <category android:name="com.template" />
-            </intent-filter>
-        </receiver>
+<!--        <receiver-->
+<!--            android:name="com.template.MyFirebaseMessagingReceiver"-->
+<!--            android:exported="true"-->
+<!--            android:permission="com.google.android.c2dm.permission.SEND"-->
+<!--            tools:ignore="Instantiatable">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="com.google.android.c2dm.intent.RECEIVE" />-->
+<!--                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />-->
+<!---->
+<!--                 Здесь вы должны использовать ваш пакет -->
+<!--                <category android:name="com.template" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
 
 
     </application>
