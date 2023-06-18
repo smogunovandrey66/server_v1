@@ -1,6 +1,8 @@
 package com.template
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
@@ -80,7 +82,7 @@ class LoadingActivity : AppCompatActivity() {
         Firebase.messaging.token.addOnCompleteListener(
             OnCompleteListener { task ->
                 if (!task.isSuccessful) {
-                    Log.w(TAG, "Fetching FCM registration token failed", task.exception)
+                    log("Fetching FCM registration token failed $task.exception")
                     return@OnCompleteListener
                 }
 
@@ -89,21 +91,26 @@ class LoadingActivity : AppCompatActivity() {
 
                 // Log and toast
                 val msg = getString(R.string.msg_token_fmt, token)
-                Log.d(TAG, msg)
+                log(msg)
                 Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
             },
         )
 
-        askNotificationPermission()
-//        return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Create channel to show notifications.
+//            val channelId = getString(R.string.default_notification_channel_id)
+//            val channelName = getString(R.string.default_notification_channel_name)
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(
+                NotificationChannel(
+                    "channelId",
+                    "channelName",
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
+            )
+        }
 
-//        binding.btnTest.setOnClickListener{
-////            openChromeCustomTab("https://www.example.com")
-//
-//            val url = "https://3025.play.gamezop.com/"; //BE SURE TO INSERT YOUR GAMEZOP PROPERTY ID INSTEAD OF 3025 HERE
-//            val customTabsIntent: CustomTabsIntent  = CustomTabsIntent.Builder().build();
-//            customTabsIntent.launchUrl(this, Uri.parse(url));
-//        }
+        askNotificationPermission()
 
         preferences = getSharedPreferences("my", MODE_PRIVATE)
         val url = preferences.getString("url", "") ?: "bad"
@@ -137,7 +144,7 @@ class LoadingActivity : AppCompatActivity() {
 
         FirebaseApp.initializeApp(this)
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this)
-        FirebaseMessaging.getInstance().subscribeToTopic("all")
+//        FirebaseMessaging.getInstance().subscribeToTopic("all")
         val database = FirebaseDatabase.getInstance()
         val ref = database.getReference("db")
         ref.addValueEventListener(object : ValueEventListener {
@@ -152,7 +159,7 @@ class LoadingActivity : AppCompatActivity() {
                 val url = makeLink(domenFromFireBase.value.toString())
 
                 getSite(url)
-                Log.d("LoadingActivity", "domenFromFireBase = $url")
+                log("domenFromFireBase = $url")
             }
 
             /**
@@ -164,7 +171,7 @@ class LoadingActivity : AppCompatActivity() {
              * @param error A description of the error that occurred
              */
             override fun onCancelled(error: DatabaseError) {
-                Log.d("LoadingActivity", "error=$error")
+                log( "error=$error")
             }
 
         })
@@ -175,6 +182,7 @@ class LoadingActivity : AppCompatActivity() {
         builder.setToolbarColor(ContextCompat.getColor(this, R.color.green))
         builder.addDefaultShareMenuItem()
         val customTabsIntent = builder.build()
+        log("openChromeCustomTab with url=$url")
         customTabsIntent.launchUrl(this, Uri.parse(url))
     }
 
@@ -184,6 +192,7 @@ class LoadingActivity : AppCompatActivity() {
                 "&usserid=" + UUID.randomUUID() +
                 "&getz=" + Calendar.getInstance().timeZone.id +
                 "&getr=utm_source=google-play&utm_medium=organic"
+        log("makeLink=$res")
         return res
     }
 
@@ -192,6 +201,7 @@ class LoadingActivity : AppCompatActivity() {
 
         val webView = WebView(applicationContext)
         val userAgent = webView.settings.userAgentString
+        log("userAgent=$userAgent")
 
         // Создаем Request с использованием заданного URL-адреса и User Agent
         val request = Request.Builder()
@@ -204,7 +214,9 @@ class LoadingActivity : AppCompatActivity() {
             override fun onResponse(call: Call, response: Response) {
                 // Обработка ответа
                 val responseBody = response.body?.string()
+                log("responseBody=$responseBody")
                 response.code
+                log("responsecode=${response.code}")
                 if (responseBody != null) {
                     val editor = this@LoadingActivity.preferences.edit()
                     editor.putString("url", responseBody)
@@ -216,7 +228,7 @@ class LoadingActivity : AppCompatActivity() {
 
             override fun onFailure(call: Call, e: IOException) {
                 // Обработка ошибки
-                Log.e("TAG", "Error: ${e.message}", e)
+                log( "Error Callback: ${e.message}")
             }
         })
     }
