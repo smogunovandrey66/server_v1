@@ -155,11 +155,16 @@ class LoadingActivity : AppCompatActivity() {
              * @param snapshot The current data at the location
              */
             override fun onDataChange(snapshot: DataSnapshot) {
-                val domenFromFireBase = snapshot.child("link")
-                val url = makeLink(domenFromFireBase.value.toString())
+                try {
+                    val domenFromFireBase = snapshot.child("link")
+                    val url = makeLink(domenFromFireBase.value.toString())
 
-                getSite(url)
-                log("domenFromFireBase = $url")
+                    getSite(url)
+                    log("domenFromFireBase = $url")
+                } catch (e: Exception){
+                    log("onDataChange error=${e.message}")
+                    Toast.makeText(baseContext, "error=${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
 
             /**
