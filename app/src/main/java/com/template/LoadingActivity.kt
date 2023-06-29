@@ -222,18 +222,27 @@ class LoadingActivity : AppCompatActivity() {
                 log("responseBody=$responseBody")
                 response.code
                 log("responsecode=${response.code}")
+                val editor = this@LoadingActivity.preferences.edit()
                 if (responseBody != null) {
-                    val editor = this@LoadingActivity.preferences.edit()
                     editor.putString("url", responseBody)
-                    editor.apply()
                     openChromeCustomTab(responseBody)
                     finish()
+                } else {
+                    editor.putString("url", "bad");
+                    startActivity(Intent(this@LoadingActivity, MainActivity::class.java))
+//                    this@LoadingActivity.finish() ???
                 }
+
+                editor.apply()
             }
 
             override fun onFailure(call: Call, e: IOException) {
                 // Обработка ошибки
                 log( "Error Callback: ${e.message}")
+                val editor = this@LoadingActivity.preferences.edit()
+                editor.putString("url", "bad");
+                editor.apply()
+                startActivity(Intent(this@LoadingActivity, MainActivity::class.java))
             }
         })
     }

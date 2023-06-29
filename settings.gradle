@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "server_v1"
+rootProject.name = "server_v8"
 include ':app'
 
 enableFeaturePreview("VERSION_CATALOGS")
